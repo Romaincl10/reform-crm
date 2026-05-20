@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom';
 import { api, type Organization, type Engagement } from '../api/client';
 import { Card, PageHeader, Badge, formatMoney, formatDate } from '../components/ui';
 import { ImportExport } from '../components/ImportExport';
+import { ColumnToggle, usePersistedToggle } from '../components/ColumnToggle';
 
 type ClientRow = Organization & { engagements: Engagement[] };
 
 export function Clients() {
   const [rows, setRows] = useState<ClientRow[]>([]);
+  const [showSpk, setShowSpk] = usePersistedToggle('clients_col_spk', false);
+  const [showSpkPulse, setShowSpkPulse] = usePersistedToggle('clients_col_spk_pulse', false);
 
   async function reload() {
     const clients = await api.get<Organization[]>('/organizations?status=client');
@@ -30,6 +33,15 @@ export function Clients() {
         actions={<ImportExport kind="clients" onImported={reload} />}
       />
 
+      <div className="mb-4">
+        <ColumnToggle
+          columns={[
+            { key: 'spk', label: 'SPK', show: showSpk, onToggle: setShowSpk },
+            { key: 'spkPulse', label: 'SPK PULSE', show: showSpkPulse, onToggle: setShowSpkPulse },
+          ]}
+        />
+      </div>
+
       <Card className="overflow-hidden">
         <table className="w-full">
           <thead className="bg-reform-mauve">
@@ -37,8 +49,8 @@ export function Clients() {
               <th className="px-6 py-3 font-medium">Client</th>
               <th className="px-6 py-3 font-medium">SIREN</th>
               <th className="px-6 py-3 font-medium">Secteur</th>
-              <th className="px-6 py-3 font-medium">SPK</th>
-              <th className="px-6 py-3 font-medium">SPK PULSE</th>
+              {showSpk && <th className="px-6 py-3 font-medium">SPK</th>}
+              {showSpkPulse && <th className="px-6 py-3 font-medium">SPK PULSE</th>}
               <th className="px-6 py-3 font-medium">Prestations</th>
               <th className="px-6 py-3 font-medium">Période</th>
               <th className="px-6 py-3 font-medium text-right">CA total</th>
@@ -68,8 +80,8 @@ export function Clients() {
                   </td>
                   <td className="px-6 py-4 text-sm text-reform-gray font-mono">{r.siren || '—'}</td>
                   <td className="px-6 py-4 text-sm text-reform-gray">{r.industry || '—'}</td>
-                  <td className="px-6 py-4 text-sm">{r.spk ? <Badge tone="blue">Oui</Badge> : <span className="text-reform-gray-soft text-xs">Non</span>}</td>
-                  <td className="px-6 py-4 text-sm">{r.spkPulse ? <Badge tone="violet">Oui</Badge> : <span className="text-reform-gray-soft text-xs">Non</span>}</td>
+                  {showSpk && <td className="px-6 py-4 text-sm">{r.spk ? <Badge tone="blue">Oui</Badge> : <span className="text-reform-gray-soft text-xs">Non</span>}</td>}
+                  {showSpkPulse && <td className="px-6 py-4 text-sm">{r.spkPulse ? <Badge tone="violet">Oui</Badge> : <span className="text-reform-gray-soft text-xs">Non</span>}</td>}
                   <td className="px-6 py-4 text-sm">
                     <Badge tone="violet">{r.engagements.length}</Badge>
                   </td>
@@ -84,7 +96,7 @@ export function Clients() {
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={11} className="px-6 py-12 text-center text-reform-gray">Aucun client. Les prospects passés à "gagné" deviennent clients.</td></tr>
+              <tr><td colSpan={9 + (showSpk ? 1 : 0) + (showSpkPulse ? 1 : 0)} className="px-6 py-12 text-center text-reform-gray">Aucun client. Les prospects passés à "gagné" deviennent clients.</td></tr>
             )}
           </tbody>
         </table>

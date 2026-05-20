@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Search } from 'lucide-react';
 import { api, OFFER_TYPES, type Engagement, type InvoiceStatus, type Organization } from '../api/client';
 import { Badge, Card, Input, PageHeader, Select, formatDate, formatMoney } from '../components/ui';
 import { ImportExport } from '../components/ImportExport';
+import { ColumnToggle, usePersistedToggle } from '../components/ColumnToggle';
 
 const INV_LABEL: Record<InvoiceStatus, string> = {
   to_invoice: 'À facturer',
@@ -33,6 +34,8 @@ export function Prestations() {
   const [offerFilter, setOfferFilter] = useState<string>('all');
   const [pulseFilter, setPulseFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [spkFilter, setSpkFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [showSpkCol, setShowSpkCol] = usePersistedToggle('prestations_col_spk', false);
+  const [showSpkPulseCol, setShowSpkPulseCol] = usePersistedToggle('prestations_col_spk_pulse', false);
   const [sortKey, setSortKey] = useState<SortKey>('startedAt');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -62,8 +65,8 @@ export function Prestations() {
     if (statusFilter !== 'all') r = r.filter(x => x.invoiceStatus === statusFilter);
     if (clientFilter !== 'all') r = r.filter(x => x.orgId === clientFilter);
     if (offerFilter !== 'all') r = r.filter(x => x.offerType === offerFilter);
-    if (pulseFilter !== 'all') r = r.filter(x => !!x.spkPulse === (pulseFilter === 'yes'));
-    if (spkFilter !== 'all') r = r.filter(x => !!x.spk === (spkFilter === 'yes'));
+    if (showSpkPulseCol && pulseFilter !== 'all') r = r.filter(x => !!x.spkPulse === (pulseFilter === 'yes'));
+    if (showSpkCol && spkFilter !== 'all') r = r.filter(x => !!x.spk === (spkFilter === 'yes'));
 
     return [...r].sort((a, b) => {
       const mul = sortDir === 'asc' ? 1 : -1;
@@ -79,7 +82,7 @@ export function Prestations() {
       if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * mul;
       return String(va).localeCompare(String(vb)) * mul;
     });
-  }, [rows, search, statusFilter, clientFilter, offerFilter, pulseFilter, spkFilter, sortKey, sortDir]);
+  }, [rows, search, statusFilter, clientFilter, offerFilter, pulseFilter, spkFilter, showSpkCol, showSpkPulseCol, sortKey, sortDir]);
 
   const totals = useMemo(() => ({
     count: filtered.length,
@@ -116,6 +119,15 @@ export function Prestations() {
         actions={<ImportExport kind="prestations" onImported={reload} />}
       />
 
+      <div className="mb-4">
+        <ColumnToggle
+          columns={[
+            { key: 'spk', label: 'SPK', show: showSpkCol, onToggle: setShowSpkCol },
+            { key: 'spkPulse', label: 'SPK PULSE', show: showSpkPulseCol, onToggle: setShowSpkPulseCol },
+          ]}
+        />
+      </div>
+
       <Card className="p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div className="relative md:col-span-2">
@@ -140,38 +152,44 @@ export function Prestations() {
             {Object.entries(INV_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </div>
-        <div className="mt-3 flex items-center gap-6 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-wider text-reform-gray font-medium">SPK :</span>
-            <div className="flex bg-reform-mauve rounded-full p-1">
-              {[{ v: 'all', l: 'Tous' }, { v: 'yes', l: 'Oui' }, { v: 'no', l: 'Non' }].map(o => (
-                <button
-                  key={o.v}
-                  type="button"
-                  onClick={() => setSpkFilter(o.v as 'all' | 'yes' | 'no')}
-                  className={`px-3 py-1 rounded-full text-xs transition ${spkFilter === o.v ? 'bg-white text-reform-violet shadow-sm font-medium' : 'text-reform-gray'}`}
-                >
-                  {o.l}
-                </button>
-              ))}
-            </div>
+        {(showSpkCol || showSpkPulseCol) && (
+          <div className="mt-3 flex items-center gap-6 flex-wrap">
+            {showSpkCol && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-reform-gray font-medium">SPK :</span>
+                <div className="flex bg-reform-mauve rounded-full p-1">
+                  {[{ v: 'all', l: 'Tous' }, { v: 'yes', l: 'Oui' }, { v: 'no', l: 'Non' }].map(o => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setSpkFilter(o.v as 'all' | 'yes' | 'no')}
+                      className={`px-3 py-1 rounded-full text-xs transition ${spkFilter === o.v ? 'bg-white text-reform-violet shadow-sm font-medium' : 'text-reform-gray'}`}
+                    >
+                      {o.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {showSpkPulseCol && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-reform-gray font-medium">SPK PULSE :</span>
+                <div className="flex bg-reform-mauve rounded-full p-1">
+                  {[{ v: 'all', l: 'Tous' }, { v: 'yes', l: 'Oui' }, { v: 'no', l: 'Non' }].map(o => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setPulseFilter(o.v as 'all' | 'yes' | 'no')}
+                      className={`px-3 py-1 rounded-full text-xs transition ${pulseFilter === o.v ? 'bg-white text-reform-violet shadow-sm font-medium' : 'text-reform-gray'}`}
+                    >
+                      {o.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-wider text-reform-gray font-medium">SPK PULSE :</span>
-            <div className="flex bg-reform-mauve rounded-full p-1">
-              {[{ v: 'all', l: 'Tous' }, { v: 'yes', l: 'Oui' }, { v: 'no', l: 'Non' }].map(o => (
-                <button
-                  key={o.v}
-                  type="button"
-                  onClick={() => setPulseFilter(o.v as 'all' | 'yes' | 'no')}
-                  className={`px-3 py-1 rounded-full text-xs transition ${pulseFilter === o.v ? 'bg-white text-reform-violet shadow-sm font-medium' : 'text-reform-gray'}`}
-                >
-                  {o.l}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
       </Card>
 
       <Card className="overflow-hidden">
@@ -181,8 +199,8 @@ export function Prestations() {
               <th className="px-6 py-3 text-left"><SortBtn k="client" label="Client" /></th>
               <th className="px-6 py-3 text-left"><SortBtn k="title" label="Prestation" /></th>
               <th className="px-6 py-3 text-left"><SortBtn k="offerType" label="Offre" /></th>
-              <th className="px-6 py-3 text-left"><SortBtn k="spk" label="SPK" /></th>
-              <th className="px-6 py-3 text-left"><SortBtn k="spkPulse" label="SPK PULSE" /></th>
+              {showSpkCol && <th className="px-6 py-3 text-left"><SortBtn k="spk" label="SPK" /></th>}
+              {showSpkPulseCol && <th className="px-6 py-3 text-left"><SortBtn k="spkPulse" label="SPK PULSE" /></th>}
               <th className="px-6 py-3 text-left"><SortBtn k="startedAt" label="Date début" /></th>
               <th className="px-6 py-3 text-left"><SortBtn k="endedAt" label="Date fin" /></th>
               <th className="px-6 py-3 text-left"><SortBtn k="invoiceStatus" label="Statut" /></th>
@@ -201,8 +219,8 @@ export function Prestations() {
                 </td>
                 <td className="px-6 py-3 text-sm">{r.title}</td>
                 <td className="px-6 py-3 text-xs">{r.offerType ? <Badge tone="neutral">{r.offerType}</Badge> : <span className="text-reform-gray">—</span>}</td>
-                <td className="px-6 py-3 text-xs">{r.spk ? <Badge tone="blue">Oui</Badge> : <span className="text-reform-gray-soft">Non</span>}</td>
-                <td className="px-6 py-3 text-xs">{r.spkPulse ? <Badge tone="violet">Oui</Badge> : <span className="text-reform-gray-soft">Non</span>}</td>
+                {showSpkCol && <td className="px-6 py-3 text-xs">{r.spk ? <Badge tone="blue">Oui</Badge> : <span className="text-reform-gray-soft">Non</span>}</td>}
+                {showSpkPulseCol && <td className="px-6 py-3 text-xs">{r.spkPulse ? <Badge tone="violet">Oui</Badge> : <span className="text-reform-gray-soft">Non</span>}</td>}
                 <td className="px-6 py-3 text-sm text-reform-gray">{formatDate(r.startedAt)}</td>
                 <td className="px-6 py-3 text-sm text-reform-gray">{formatDate(r.endedAt)}</td>
                 <td className="px-6 py-3"><Badge tone={INV_TONE[r.invoiceStatus]}>{INV_LABEL[r.invoiceStatus]}</Badge></td>
@@ -211,13 +229,13 @@ export function Prestations() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={10} className="px-6 py-12 text-center text-reform-gray">Aucune prestation ne correspond aux filtres.</td></tr>
+              <tr><td colSpan={8 + (showSpkCol ? 1 : 0) + (showSpkPulseCol ? 1 : 0)} className="px-6 py-12 text-center text-reform-gray">Aucune prestation ne correspond aux filtres.</td></tr>
             )}
           </tbody>
           {filtered.length > 0 && (
             <tfoot className="bg-reform-mauve/40">
               <tr className="font-medium">
-                <td className="px-6 py-3 text-sm" colSpan={8}>TOTAL ({totals.count})</td>
+                <td className="px-6 py-3 text-sm" colSpan={6 + (showSpkCol ? 1 : 0) + (showSpkPulseCol ? 1 : 0)}>TOTAL ({totals.count})</td>
                 <td className="px-6 py-3 text-sm text-right">{formatMoney(totals.ca)}</td>
                 <td className="px-6 py-3 text-sm text-right text-emerald-700">{formatMoney(totals.paid)}</td>
               </tr>

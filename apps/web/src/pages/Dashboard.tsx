@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Users, Briefcase, AlertCircle, Target, Sparkles } from 'lucide-react';
+import { TrendingUp, Users, Briefcase, AlertCircle, Target, Sparkles, Zap } from 'lucide-react';
 import { api, type Organization, type Deal, type Engagement } from '../api/client';
 import { Card, PageHeader, Badge, formatMoney, formatDate } from '../components/ui';
 
@@ -27,6 +27,8 @@ export function Dashboard() {
   const pipelineValue = openDeals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
   const pipelineWeighted = openDeals.reduce((sum, d) => sum + ((d.amount ?? 0) * (d.probability ?? 0)) / 100, 0);
   const toInvoice = engagements.filter(e => e.invoiceStatus === 'to_invoice').reduce((s, e) => s + e.totalAmount, 0);
+  const spkPulseCA = engagements.filter(e => e.spkPulse).reduce((s, e) => s + e.totalAmount, 0);
+  const spkPulseCount = engagements.filter(e => e.spkPulse).length;
 
   // Derniers prospects/devis ajoutés (top 6 par updatedAt sur les deals ouverts)
   const recentDeals = [...openDeals]
@@ -42,12 +44,15 @@ export function Dashboard() {
     <div className="p-8 max-w-7xl">
       <PageHeader title="Tableau de bord" subtitle="Vue d'ensemble de l'activité commerciale REFORM" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <Stat icon={<Briefcase size={20} />} label="Prospects actifs" value={prospects.toString()} />
         <Stat icon={<Users size={20} />} label="Clients" value={clients.toString()} />
+        <Stat icon={<AlertCircle size={20} />} label="À facturer" value={formatMoney(toInvoice)} tone="amber" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Stat icon={<TrendingUp size={20} />} label="Pipeline brut" value={formatMoney(pipelineValue)} tone="violet" />
         <Stat icon={<Target size={20} />} label="Pipeline probabilisé" value={formatMoney(pipelineWeighted)} tone="violet" />
-        <Stat icon={<AlertCircle size={20} />} label="À facturer" value={formatMoney(toInvoice)} tone="amber" />
+        <Stat icon={<Zap size={20} />} label={`CA SPK PULSE${spkPulseCount > 0 ? ` (${spkPulseCount})` : ''}`} value={formatMoney(spkPulseCA)} tone="pulse" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -112,10 +117,11 @@ export function Dashboard() {
   );
 }
 
-function Stat({ icon, label, value, tone = 'neutral' }: { icon: React.ReactNode; label: string; value: string; tone?: 'neutral' | 'violet' | 'amber' }) {
+function Stat({ icon, label, value, tone = 'neutral' }: { icon: React.ReactNode; label: string; value: string; tone?: 'neutral' | 'violet' | 'amber' | 'pulse' }) {
   const toneClass =
     tone === 'violet' ? 'bg-reform-violet-light text-reform-violet' :
     tone === 'amber' ? 'bg-amber-50 text-amber-700' :
+    tone === 'pulse' ? 'bg-gradient-to-br from-reform-violet to-reform-violet-dark text-white' :
     'bg-reform-mauve text-reform-ink';
   return (
     <Card className="p-5">
