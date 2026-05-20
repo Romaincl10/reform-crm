@@ -118,6 +118,7 @@ export interface Deal {
   lostReason?: string | null;
   ownerId?: string | null;
   notes?: string | null;
+  createdAt: string;
   updatedAt: string;
 }
 

@@ -94,6 +94,11 @@ export function OrgDetail() {
                             <span>· presta {formatDate(d.serviceStartAt)} → {formatDate(d.serviceEndAt)}</span>
                           )}
                         </div>
+                        <div className="text-[11px] text-reform-gray-soft mt-1">
+                          Créé le {formatDate(d.createdAt)}
+                          {d.stage === 'won' && d.closedAt && <> · <span className="text-emerald-600 font-medium">Signé le {formatDate(d.closedAt)}</span></>}
+                          {d.stage === 'lost' && d.closedAt && <> · <span className="text-red-600">Perdu le {formatDate(d.closedAt)}</span></>}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="text-sm font-medium">{formatMoney(d.amount)}</div>

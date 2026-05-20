@@ -1,8 +1,10 @@
 // Import du fichier CRM_Commercial_2026.xlsx → Supabase
-// Lit le fichier, mappe sur le modèle CRM, crée orgas + deals + engagements (pour les won)
-// Idempotent sur les orgas (match par nom), pas sur les deals (chaque run ajoute).
+// WIPE puis import depuis l'Excel
+//   - Statut prioritaire sur Étape pour déterminer Gagné/Perdu
+//   - Utilise la "Date création" Excel comme createdAt deal (traçabilité historique)
+//   - Crée engagement pour les won avec createdAt = date de clôture réelle ou aujourd'hui
 import ExcelJS from 'exceljs';
-import { eq } from 'drizzle-orm';
+import { eq, ne, sql as drizzleSql } from 'drizzle-orm';
 import { db, schema, sql } from './client.js';
 
 const EXCEL_PATH = 'C:/Users/RomainCLOUET/Documents/CRM_Commercial_2026.xlsx';
@@ -86,6 +88,17 @@ const cellDate = (v: any): Date | null => {
 };
 
 async function main() {
+  // 1. Wipe data (préserve users)
+  console.log('→ Wipe payments / milestones / engagements / deals / activities / contacts / organizations…');
+  await db.execute(drizzleSql`DELETE FROM payments`);
+  await db.execute(drizzleSql`DELETE FROM milestones`);
+  await db.execute(drizzleSql`DELETE FROM engagements`);
+  await db.execute(drizzleSql`DELETE FROM activities`);
+  await db.execute(drizzleSql`DELETE FROM deals`);
+  await db.execute(drizzleSql`DELETE FROM contacts`);
+  await db.execute(drizzleSql`DELETE FROM organizations`);
+  console.log('✓ Tables purgées (5 users conservés)');
+
   console.log('→ Lecture Excel :', EXCEL_PATH);
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(EXCEL_PATH);
@@ -128,13 +141,15 @@ async function main() {
     const row = ws.getRow(r);
     const clientName = cellStr(row.getCell(C('Client / Prospect')).value);
     if (!clientName) continue;
-    if (/^total/i.test(clientName)) continue; // ignore les lignes TOTAUX / TOTAL
+    if (/^(total|totaux|tota)/i.test(clientName)) continue; // ignore les lignes TOTAUX / TOTAL
 
     const title = cellStr(row.getCell(C('Intitulé du dossier')).value) || 'Mission';
     const typePrestation = cellStr(row.getCell(C('Type de prestation')).value);
+    const statutFr = cellStr(row.getCell(C('Statut')).value);
     const stageFr = cellStr(row.getCell(C('Étape')).value);
     const trim = cellStr(row.getCell(C('Trimestre cible')).value);
     const amount = cellNum(row.getCell(C('Montant HT (€)')).value);
+    const dateCreation = cellDate(row.getCell(C('Date création')).value);
     const closeExp = cellDate(row.getCell(C('Date clôture prévue')).value);
     const closeReal = cellDate(row.getCell(C('Date clôture réelle')).value);
     const financement = cellStr(row.getCell(C('Financement')).value);
@@ -142,8 +157,16 @@ async function main() {
     const comment = cellStr(row.getCell(C('Commentaires')).value);
     const nextAction = cellStr(row.getCell(C('Prochaine action')).value);
 
-    const stage: Stage = STAGE_MAP[stageFr] || 'to_qualify';
-    const probability = STAGE_OVERRIDE_PROBA[stageFr] ?? PROBA_MAP[stage];
+    // STATUT prioritaire sur ÉTAPE pour Gagné/Perdu
+    let stage: Stage;
+    if (statutFr === 'Gagné') stage = 'won';
+    else if (statutFr === 'Perdu') stage = 'lost';
+    else stage = STAGE_MAP[stageFr] || 'to_qualify';
+
+    const probability =
+      stage === 'won' ? 100 :
+      stage === 'lost' ? 0 :
+      STAGE_OVERRIDE_PROBA[stageFr] ?? PROBA_MAP[stage];
     const offerType = OFFER_MAP[typePrestation] || 'Appui conseil';
     const trimDates = TRIMESTER_DATES[trim];
 
@@ -176,8 +199,8 @@ async function main() {
     if (comment) noteParts.push(comment);
     const notes = noteParts.length ? noteParts.join('\n') : null;
 
-    // Create deal
-    const dealRow = {
+    // Create deal — date création depuis Excel pour traçabilité
+    const dealRow: any = {
       organizationId: org.id,
       title,
       stage,
@@ -185,28 +208,38 @@ async function main() {
       amount: amount || null,
       probability,
       expectedCloseAt: closeExp,
-      closedAt: closeReal || (stage === 'won' ? new Date() : null),
+      closedAt: closeReal || (stage === 'won' || stage === 'lost' ? new Date() : null),
       serviceStartAt: trimDates?.start ?? null,
       serviceEndAt: trimDates?.end ?? null,
       notes,
     };
-    const [deal] = await db.insert(schema.deals).values(dealRow as any).returning();
+    if (dateCreation) {
+      dealRow.createdAt = dateCreation;
+      dealRow.updatedAt = dateCreation;
+    }
+    const [deal] = await db.insert(schema.deals).values(dealRow).returning();
     dealsCreated++;
     summary.push({ orga: org.name, stage, offer: offerType, amount });
 
-    // If won, create engagement
+    // If won, create engagement — createdAt = date clôture réelle (date de signature)
     if (stage === 'won' && amount > 0) {
-      await db.insert(schema.engagements).values({
+      const engagementRow: any = {
         organizationId: org.id,
         dealId: deal.id,
         title,
         offerType,
         totalAmount: amount,
-        status: 'active' as any,
-        invoiceStatus: 'to_invoice' as any,
+        status: 'active',
+        invoiceStatus: 'to_invoice',
         startedAt: trimDates?.start ?? null,
         endedAt: trimDates?.end ?? null,
-      } as any);
+      };
+      const signedAt = closeReal || dateCreation;
+      if (signedAt) {
+        engagementRow.createdAt = signedAt;
+        engagementRow.updatedAt = signedAt;
+      }
+      await db.insert(schema.engagements).values(engagementRow);
       engsCreated++;
     }
   }

@@ -5,6 +5,19 @@ import { api, OFFER_TYPES, type Organization, type Deal, type DealStage } from '
 import { Button, Card, Field, Input, Modal, PageHeader, Select, Textarea, Badge, formatMoney } from '../components/ui';
 import { ImportExport } from '../components/ImportExport';
 
+function relativeDate(d: string | Date | null | undefined): string {
+  if (!d) return '';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  const diff = Date.now() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days < 1) return "aujourd'hui";
+  if (days < 2) return 'hier';
+  if (days < 7) return `il y a ${days}j`;
+  if (days < 30) return `il y a ${Math.floor(days / 7)} sem.`;
+  if (days < 365) return `il y a ${Math.floor(days / 30)} mois`;
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+}
+
 const STAGES: { id: DealStage; label: string }[] = [
   { id: 'to_qualify', label: 'À qualifier' },
   { id: 'contacted', label: 'Contacté' },
@@ -108,12 +121,17 @@ function Kanban({ stages, deals, orgs, onMove }: { stages: { id: DealStage; labe
                 return (
                   <Card key={d.id} className="p-3 cursor-pointer hover:border-reform-violet transition">
                     <Link to={`/crm/${org?.id}`} className="block">
-                      <div className="font-medium text-sm text-reform-ink line-clamp-2">{d.title}</div>
-                      <div className="text-xs text-reform-gray mt-1">{org?.name}</div>
+                      <div className="font-display text-base text-reform-ink leading-tight line-clamp-2" title={org?.name}>{org?.name}</div>
+                      <div className="text-xs text-reform-gray mt-1 line-clamp-1" title={d.title}>
+                        {d.offerType ? <span className="text-reform-violet font-medium">{d.offerType}</span> : null}
+                        {d.offerType && d.title ? ' · ' : ''}
+                        {d.title}
+                      </div>
                       <div className="flex items-center justify-between mt-3">
-                        <span className="text-xs font-medium text-reform-violet">{formatMoney(d.amount)}</span>
+                        <span className="text-sm font-medium text-reform-violet">{formatMoney(d.amount)}</span>
                         {d.probability != null && <span className="text-xs text-reform-gray">{d.probability}%</span>}
                       </div>
+                      <div className="text-[10px] text-reform-gray-soft mt-1.5">Créé {relativeDate(d.createdAt)}</div>
                     </Link>
                     <div className="flex gap-1 mt-3 pt-2 border-t border-reform-border">
                       <select
