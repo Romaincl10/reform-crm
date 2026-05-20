@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-reform-violet: #5F30E2;
+  --color-reform-violet-dark: #4a25b8;
+  --color-reform-violet-light: #f0eafd;
+  --color-reform-ink: #3C3C3B;
+  --color-reform-ink-soft: #212529;
+  --color-reform-gray: #8a8a8a;
+  --color-reform-gray-soft: #a6a5a6;
+  --color-reform-beige: #F6F2EF;
+  --color-reform-cream: #FCF9F7;
+  --color-reform-mauve: #F8F7FC;
+  --color-reform-blue-soft: #F8FAFF;
+  --color-reform-bg: #FFFFFF;
+  --color-reform-border: #ececec;
+
+  --font-display: "Anton", "Sequel100Black-65", "Inter", sans-serif;
+  --font-sans: "Poppins", "Inter", system-ui, sans-serif;
+
+  --radius-pill: 9999px;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-reform-bg);
+  color: var(--color-reform-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  color: var(--color-reform-ink);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #d6d6d6; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #b5b5b5; }

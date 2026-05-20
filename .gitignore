@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+
+# Database locale (legacy SQLite)
+*.sqlite
+*.sqlite-journal
+*.db
+data/
+apps/api/data/
+
+# Build
+apps/web/dist/
+apps/api/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp

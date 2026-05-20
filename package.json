@@ -1,0 +1,22 @@
+{
+  "name": "reform-crm",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:migrate:all": "tsx apps/api/src/db/migrate-all.ts",
+    "db:seed": "npm run db:seed -w apps/api",
+    "db:seed:users": "tsx apps/api/src/db/seed-users.ts",
+    "build": "npm run build -w apps/web",
+    "build:prod": "npm run build -w apps/web && npm run build -w apps/api",
+    "start": "npm run db:migrate:all && node apps/api/dist/index.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "tsx": "^4.19.0"
+  }
+}
