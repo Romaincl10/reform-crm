@@ -1,7 +1,14 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from './schema.js';
+
+// Charge le .env de apps/api quelle que soit la cwd
+const here = path.dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: path.resolve(here, '../../.env') });
+loadEnv(); // fallback : .env dans le cwd si présent
 
 const url = process.env.DATABASE_URL;
 if (!url) {
