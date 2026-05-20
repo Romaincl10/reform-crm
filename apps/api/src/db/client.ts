@@ -18,6 +18,7 @@ export const sql = postgres(url, {
   prepare: false,
   ssl: 'require',
   max: 10,
+  onnotice: () => {}, // silence les NOTICE PostgreSQL (déclarations "already exists" idempotentes)
 });
 
 export const db = drizzle(sql, { schema });
