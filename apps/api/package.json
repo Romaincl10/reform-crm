@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:migrate": "tsx src/db/migrate.ts",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "update-germain-password": "tsx src/db/update-germain-password.ts"
   },
   "dependencies": {
     "express": "^4.21.0",

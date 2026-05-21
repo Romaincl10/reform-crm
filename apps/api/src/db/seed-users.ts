@@ -15,7 +15,7 @@ const USERS: SeedUser[] = [
   { email: 'mathieu.lafont@joinreform.com', fullName: 'Mathieu LAFONT', role: 'admin', password: 'UqcKgarMBj4AjE@93' },
   { email: 'maelle.beltas@joinreform.com',  fullName: 'Maëlle BELTAS',  role: 'admin', password: 'VXiMLChX7yNqNP%26' },
   // SPK — consultation (identifiant court, pas d'email)
-  { email: 'germain.butrot', fullName: 'Germain BUTROT',  role: 'member', password: 'jHKanuEJFQEzHF$39' },
+  { email: 'germain.butrot', fullName: 'Germain BUTROT',  role: 'member', password: 'zmpibMWuXhLTmnuP8p' },
   { email: 'kevin.geoffroy', fullName: 'Kévin GEOFFROY',  role: 'member', password: 'bmymWGnVwPfKfd#55' },
   { email: 'paul.debelair',  fullName: 'Paul DE BEL AIR', role: 'member', password: 'ttc8sAEUsdsr3j@48' },
 ];
