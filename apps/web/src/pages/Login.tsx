@@ -6,7 +6,7 @@ import { Button, Field, Input } from '../components/ui';
 export function Login() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@joinreform.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ export function Login() {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.message === 'invalid_credentials' ? 'Email ou mot de passe incorrect' : err.message);
+      setError(err.message === 'invalid_credentials' ? 'Identifiant ou mot de passe incorrect' : err.message);
     } finally {
       setLoading(false);
     }
@@ -36,8 +36,8 @@ export function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-sm border border-reform-border space-y-5">
-          <Field label="Email">
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
+          <Field label="Identifiant">
+            <Input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="email ou identifiant" required autoFocus autoComplete="username" />
           </Field>
           <Field label="Mot de passe">
             <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />

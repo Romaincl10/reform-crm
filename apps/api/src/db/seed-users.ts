@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { db, schema } from './client.js';
 import { hashPassword } from '../lib/password.js';
 
@@ -11,14 +11,19 @@ interface SeedUser {
 }
 
 const USERS: SeedUser[] = [
-  // REFORM — admins
+  // REFORM — admins (email complet)
   { email: 'mathieu.lafont@joinreform.com', fullName: 'Mathieu LAFONT', role: 'admin', password: 'UqcKgarMBj4AjE@93' },
   { email: 'maelle.beltas@joinreform.com',  fullName: 'Maëlle BELTAS',  role: 'admin', password: 'VXiMLChX7yNqNP%26' },
-  // SPK — consultation
-  { email: 'germain.butrot@spk-group.com',  fullName: 'Germain BUTROT', role: 'member', password: 'jHKanuEJFQEzHF$39' },
-  { email: 'kevin.geoffroy@spk-group.com',  fullName: 'Kévin GEOFFROY', role: 'member', password: 'bmymWGnVwPfKfd#55' },
-  { email: 'paul.debelair@spk-group.com',   fullName: 'Paul DE BEL AIR', role: 'member', password: 'ttc8sAEUsdsr3j@48' },
+  // SPK — consultation (identifiant court, pas d'email)
+  { email: 'germain.butrot', fullName: 'Germain BUTROT',  role: 'member', password: 'jHKanuEJFQEzHF$39' },
+  { email: 'kevin.geoffroy', fullName: 'Kévin GEOFFROY',  role: 'member', password: 'bmymWGnVwPfKfd#55' },
+  { email: 'paul.debelair',  fullName: 'Paul DE BEL AIR', role: 'member', password: 'ttc8sAEUsdsr3j@48' },
 ];
+
+// Cleanup : supprime les anciens comptes SPK @spk-group.com (renommés en username court)
+const removed = await db.delete(schema.users).where(like(schema.users.email, '%@spk-group.com'));
+const removedCount = (removed as any).rowCount ?? (removed as any).rowsAffected ?? 0;
+if (removedCount > 0) console.log(`✓ ${removedCount} ancien(s) compte(s) @spk-group.com supprimé(s)`);
 
 let created = 0;
 let updated = 0;

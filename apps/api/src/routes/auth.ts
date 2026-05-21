@@ -8,8 +8,9 @@ import { requireAuth } from '../middleware/auth.js';
 
 export const authRouter = Router();
 
+// Accepte un email complet OU un username court (ex. "germain.butrot")
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(3),
   password: z.string().min(1),
 });
 
