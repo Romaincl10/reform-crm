@@ -6,6 +6,9 @@ dist/
 *.log
 .DS_Store
 
+# Reporting HTML files (générés à la demande, pas trackés)
+Reporting_REFORM_*.html
+
 # Database locale (legacy SQLite)
 *.sqlite
 *.sqlite-journal
