@@ -15,6 +15,7 @@ import { milestonesRouter } from './routes/milestones.js';
 import { paymentsRouter } from './routes/payments.js';
 import { importRouter } from './routes/import.js';
 import { exportRouter } from './routes/export.js';
+import { applySchema } from './db/migrate-all.js';
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -55,4 +56,9 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`✓ REFORM CRM API listening on port ${port}`);
+  // Le serveur écoute déjà → /health répond immédiatement et le healthcheck Railway passe,
+  // sans attendre le cold-start Supabase. La migration (idempotente) tourne ensuite, en tâche de fond.
+  applySchema()
+    .then(() => console.log('✓ Migration DB terminée'))
+    .catch((err) => console.error('✗ Migration DB abandonnée (le serveur reste up) :', err.message));
 });

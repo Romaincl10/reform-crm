@@ -13,7 +13,7 @@
     "db:seed:users": "tsx apps/api/src/db/seed-users.ts",
     "build": "npm run build -w apps/web",
     "build:prod": "npm run build -w apps/web && npm run build -w apps/api",
-    "start": "npm run db:migrate:all && node apps/api/dist/index.js"
+    "start": "node apps/api/dist/index.js"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

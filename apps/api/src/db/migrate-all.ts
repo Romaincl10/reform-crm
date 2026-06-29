@@ -1,5 +1,9 @@
-// Migration PostgreSQL idempotente — exécutée au start Railway (npm run start)
+// Migration PostgreSQL idempotente.
+// Importée par le serveur (index.ts) et lancée APRÈS le bind du port, en arrière-plan,
+// pour ne pas bloquer le healthcheck Railway pendant le cold-start Supabase.
+// Reste exécutable en CLI : `npm run db:migrate:all`.
 import 'dotenv/config';
+import { pathToFileURL } from 'node:url';
 import { sql } from './client.js';
 
 const DDL = `
@@ -148,9 +152,34 @@ CREATE INDEX IF NOT EXISTS idx_milestones_eng ON milestones(engagement_id);
 CREATE INDEX IF NOT EXISTS idx_payments_milestone ON payments(milestone_id);
 `;
 
-console.log('→ Application du schéma PostgreSQL…');
-await sql.unsafe(DDL);
-console.log('✓ Schéma appliqué.');
+// Applique le schéma de façon idempotente, avec quelques tentatives :
+// au redémarrage juste après un restore Supabase, le pooler peut être froid (ENOTFOUND transitoire).
+export async function applySchema(retries = 5, delayMs = 3000): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`→ Application du schéma PostgreSQL… (tentative ${attempt}/${retries})`);
+      await sql.unsafe(DDL);
+      console.log('✓ Schéma appliqué.');
+      return;
+    } catch (err: any) {
+      const last = attempt === retries;
+      console.error(`✗ Migration échouée (${err.code || err.message})${last ? '' : ` — nouvelle tentative dans ${delayMs / 1000}s`}`);
+      if (last) throw err;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
 
-await sql.end();
-process.exit(0);
+// Exécution directe en CLI (`npm run db:migrate:all`) : applique puis ferme la connexion.
+// Quand le module est importé par le serveur, ce bloc ne s'exécute pas.
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  try {
+    await applySchema();
+    await sql.end();
+    process.exit(0);
+  } catch {
+    await sql.end().catch(() => {});
+    process.exit(1);
+  }
+}
