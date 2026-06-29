@@ -25,6 +25,7 @@ export const sql = postgres(url, {
   prepare: false,
   ssl: 'require',
   max: 10,
+  connect_timeout: 10, // échec rapide si la base est injoignable (ex: projet Supabase en pause) → évite les requêtes pendantes → 502
   onnotice: () => {}, // silence les NOTICE PostgreSQL (déclarations "already exists" idempotentes)
 });
 
